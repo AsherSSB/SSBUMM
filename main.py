@@ -4,6 +4,9 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from custom import Client
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 bot = Client()
 

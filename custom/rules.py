@@ -16,7 +16,7 @@ class Rules():
         await interaction.response.defer(ephemeral=True)
         await interaction.followup.send(content=rules, ephemeral=True)
         
-        #await asyncio.sleep(5)  
+        await asyncio.sleep(3)  
 
         view = discord.ui.View()
         accept_button = AcceptButton()
@@ -27,7 +27,7 @@ class Rules():
         try:
             await asyncio.wait_for(accept_button.event.wait(), timeout=60.0)  # Wait for 60 seconds
         except asyncio.TimeoutError:
-            pass
+            await interaction.followup.send("Button timed out.", ephemeral=True)
 
         return accept_button.accepted
 

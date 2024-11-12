@@ -22,13 +22,15 @@ class Database():
 
 
     # TODO: check for user already in database
-    async def add_user(self, id):
+    async def add_user(self, userid):
         try:
-            await self.cur.execute("INSERT INTO users (id, elo, reputation) VALUES (?, 1000, 0)", (id,))
+            await self.cur.execute("INSERT INTO users (id, elo, reputation) VALUES (?, 1000, 0)", (userid,))
             await self.con.commit()
             logging.info(f"User {id} added to database")
         except Exception as e:
             logging.error(f"Failed to add user {id}: {e}")
 
 
-    
+    async def idqeury(self, userid:int):
+        res = await self.cur.execute("SELECT elo, reputation FROM users WHERE id = ?", (userid,))
+        return await res.fetchone()

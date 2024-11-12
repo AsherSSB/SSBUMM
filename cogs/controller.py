@@ -120,7 +120,15 @@ class Controller(commands.Cog):
     @discord.app_commands.command(name="queueme")
     async def enter_queue(self, interaction:discord.Interaction):
         # TODO: verify user in database before adding them to queue
-        # TODO: verify mm is open before adding to queue
+        if self.mmopen == False:
+            await interaction.response.send_message("Matchmaking is currently closed", ephemeral=True)
+            raise Exception("MM is closed")
+
+        for players in self.queue:
+            if interaction.user.id == players[0]:
+                await interaction.response.send_message("You are already in queue", ephemeral=True)
+                raise Exception("You are already in queue")
+
         await interaction.response.send_message("You have entered queue", ephemeral=True)
         self.queue.append((interaction.user.id, interaction))
 

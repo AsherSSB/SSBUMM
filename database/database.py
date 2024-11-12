@@ -29,3 +29,6 @@ class Database():
             logging.info(f"User {id} added to database")
         except Exception as e:
             logging.error(f"Failed to add user {id}: {e}")
+
+
+    

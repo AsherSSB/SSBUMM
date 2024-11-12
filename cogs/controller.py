@@ -125,7 +125,6 @@ class Controller(commands.Cog):
         self.queue.append((interaction.user.id, interaction))
 
 
-
 async def setup(bot):
     controller = Controller(bot)
     await bot.add_cog(controller)

@@ -34,7 +34,7 @@ class Controller(commands.Cog):
                 asyncio.create_task(self.match_players(player1, player2))
             await asyncio.sleep(1)  # Adjust the sleep duration as needed
 
-    async def match_players(self, player1:tuple, player2:tuple):
+    async def match_players(self, player1:tuple[int, discord.Interaction], player2:tuple[int, discord.Interaction]):
         try:
             # Query for player info by id
             p1info = await self.db.idqeury(player1[0])
@@ -45,7 +45,18 @@ class Controller(commands.Cog):
             p1confirm, p2confirm = await asyncio.gather(p1confirm_task, p2confirm_task)
             if p1confirm and p2confirm:
                 # TODO: Game functionality
-                await self.start_stage_select(player1[1], player2[1])
+                stages = await self.start_stage_select(player1[1], player2[1])
+                hostmodal = discord.ui.Modal(title="You are Host!", timeout=300)
+                code = discord.ui.TextInput(label="Room Code")
+                hostmodal.add_item(code)
+                hostbutton = HostInteractions(modal=hostmodal)
+                view = discord.ui.View()
+                view.add_item(hostbutton)
+                if stages[1] == 1:
+                    await player1[1].followup.send(view=view)
+                else:
+                    await player2[1].followup.send(view=view)
+                print("code: ", code)
             else:
                 await self.send_declined_messages((player1[1], p1confirm,), (player2[1], p2confirm))
 
@@ -198,8 +209,9 @@ class Controller(commands.Cog):
             print(stages)
             stages = await self.send_stage_select(p2interact, stages, 1)
         # stages is now a 1 item list
-        p1interact.followup.send(f"Begin Match on {stages[0]}", ephemeral=True)
-        p2interact.followup.send(f"Begin Match on {stages[0]}", ephemeral=True)
+        # append coinflip winner to stages for further interactions
+        stages.append(coinflip)
+        return stages
 
 
 
@@ -229,34 +241,30 @@ class Controller(commands.Cog):
         
         """
 
-    @discord.app_commands.command(name="embed")
-    async def test_send_embed(self, interaction:discord.Interaction):
-        file = discord.File("Battlefield.png")
-        stage = "Pokemon Stadium 2"
-        embed=discord.Embed(title="Ranked Match Making", description=f"Playing on {stage}")
+
+    async def send_embed(self, player:discord.Interaction, opponent:discord.Interaction, 
+                         stage:str, p1char:str, p2char:str, score:list[int]): # score[0] NEEDS to be player's score and score[1] opponent score
+        embed=discord.Embed(title="Ranked Match Making", description=f"Playing on {stage} vs. {opponent.user.display_name}")
+        # process stage string from player readable to embed readable
+        stage = stage.replace(" ", "_")
         unix = int(time.time()) + 15 * 60
-        embed.set_image(url=f"attachment://{file}")
-        embed.add_field(name="Player 1", value="Sonic", inline=True)
-        embed.add_field(name="Score", value="0 - 0", inline=True)
-        embed.add_field(name="Player 2", value="Terry", inline=True)
-        embed.set_footer(text=f"<t:{unix}:R>")
-        
-        await interaction.response.send_message(file=file,embed=embed)
+        item_image_path = f'stages/{stage}.png'
+        file = discord.File(item_image_path)
+        user_avatar_url = opponent.user.avatar.url
+        embed.set_thumbnail(url=user_avatar_url)
+        embed.add_field(name=player.user.display_name, value=p1char, inline=True)
+        embed.add_field(name="Score", value=f"{score[0]} - {score[1]}", inline=True)
+        embed.add_field(name=opponent.user.display_name, value=p2char, inline=True)
+        embed.add_field(name="Game will expire", value=f"<t:{unix}:R>", inline=True)
+        embed.set_image(url=f"attachment://{stage}.png")
+        await player.followup.send(file=file, embed=embed)
 
 
-    @discord.app_commands.command(name='abrir')
-    async def abrir_case(self, interaction:discord.Interaction):
-        embed = discord.Embed(title="Test", color=0x00ff00)
-
-        item_image_path = 'stages/Battlefield.png'
-        if os.path.exists(item_image_path) and os.path.isfile(item_image_path):
-            file = discord.File(item_image_path)
-            embed.set_image(url=f"attachment://Battlefield.png")  # then use that file as the embed url
-            await interaction.response.send_message(file=file, embed=embed)
-        else:
-            await interaction.response.send_message(embed=embed)
-
-
+    @discord.app_commands.command(name="room")
+    async def test_roomcode_modal(self, interaction:discord.Interaction):
+        hostint = HostInteractions()
+        code = await hostint.send_host_view(interaction=interaction)
+        await interaction.followup.send(f"{code}")
 
 class CharacterSelect(discord.ui.Modal, title='Character Select'):
     name = discord.ui.TextInput(label='Character')
@@ -277,26 +285,45 @@ class Stages(discord.ui.Select):
         self.event.set()
 
 
-class Game(discord.Embed):
-    def __init__(self, stage, ):
-        super().__init__(title="Ranked MM", description=f"playing on{stage}")
-        stage_image = discord.File(f"stages/{stage}.png", filename=f"{stage}.png")
-        self.set_image(url=f"attachment://{stage}.png")
+
+class HostInteractions():
+    def __init__(self):
+        pass
+
+    async def send_host_view(self, interaction:discord.Interaction):
+        view = discord.ui.View()
+        modal = HostModal()
+        button = HostButton(modal=modal)
+        view.add_item(button)
+        await interaction.response.send_message(view=view)
+
+        try:
+            await asyncio.wait_for(modal.event.wait(), timeout=60.0)  # Wait for 60 seconds
+        except asyncio.TimeoutError:
+            await interaction.followup.send("Button timed out.", ephemeral=True)
+
+        return modal.roomcode
+
+        
+
+class HostButton(discord.ui.Button):
+    def __init__(self, *, label = "Enter Room Code", modal):
+        super().__init__(label=label)
+        self.modal:HostModal = modal
+
+    async def callback(self, interaction):
+        await interaction.response.send_modal(self.modal)
+
+class HostModal(discord.ui.Modal):
+    def __init__(self, title = "Enter Room Code"):
+        super().__init__(title=title) 
+        self.roomcode = discord.ui.TextInput(label="Room Code", required=True)
+        self.add_item(self.roomcode)
+        self.event = asyncio.Event()
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    async def on_submit(self, interaction:discord.Interaction):
+        self.event.set()
+        await interaction.response.defer(ephemeral=True, thinking=True)
 
 async def setup(bot):
     controller = Controller(bot)

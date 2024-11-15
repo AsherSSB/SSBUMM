@@ -262,9 +262,24 @@ class Controller(commands.Cog):
 
     @discord.app_commands.command(name="room")
     async def test_roomcode_modal(self, interaction:discord.Interaction):
-        hostint = HostInteractions()
-        code = await hostint.send_host_view(interaction=interaction)
+        code = await self.send_host_view(interaction=interaction)
         await interaction.followup.send(f"{code}")
+
+    async def send_host_view(self, interaction:discord.Interaction):
+        view = discord.ui.View()
+        modal = HostModal()
+        button = HostButton(modal=modal)
+        view.add_item(button)
+        await interaction.response.send_message(view=view)
+
+        try:
+            await asyncio.wait_for(modal.event.wait(), timeout=60.0)  # Wait for 60 seconds
+        except asyncio.TimeoutError:
+            await interaction.followup.send("Button timed out.", ephemeral=True)
+
+        return modal.roomcode
+
+
 
 class CharacterSelect(discord.ui.Modal, title='Character Select'):
     name = discord.ui.TextInput(label='Character')
@@ -285,27 +300,6 @@ class Stages(discord.ui.Select):
         self.event.set()
 
 
-
-class HostInteractions():
-    def __init__(self):
-        pass
-
-    async def send_host_view(self, interaction:discord.Interaction):
-        view = discord.ui.View()
-        modal = HostModal()
-        button = HostButton(modal=modal)
-        view.add_item(button)
-        await interaction.response.send_message(view=view)
-
-        try:
-            await asyncio.wait_for(modal.event.wait(), timeout=60.0)  # Wait for 60 seconds
-        except asyncio.TimeoutError:
-            await interaction.followup.send("Button timed out.", ephemeral=True)
-
-        return modal.roomcode
-
-        
-
 class HostButton(discord.ui.Button):
     def __init__(self, *, label = "Enter Room Code", modal):
         super().__init__(label=label)
@@ -323,7 +317,7 @@ class HostModal(discord.ui.Modal):
     
     async def on_submit(self, interaction:discord.Interaction):
         self.event.set()
-        await interaction.response.defer(ephemeral=True, thinking=True)
+        await interaction.response.defer(ephemeral=True, thinking=False)
 
 async def setup(bot):
     controller = Controller(bot)

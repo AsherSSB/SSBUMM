@@ -7,9 +7,9 @@ class Elo():
     def __init__(self, bot):
         self.bot = bot
 
-    # outcome is 1 for PA win, 0 for PB win
-    async def adjust_elo(self, playerArating, playerBrating,
-                            Ka, Kb, outcome) -> tuple[int, int]:
+    # outcome is 0 for PA win, 1 for PB win
+    async def adjust_elo(self, playerArating, playerBrating, outcome) -> tuple[int, int]:
+        k = 40
         # Calculate the Winning Probability of Player B
         Pb = self.probability(playerArating, playerBrating)
 
@@ -17,8 +17,8 @@ class Elo():
         Pa = self.probability(playerBrating, playerArating)
 
         # Update the Elo Ratings
-        playerArating = playerArating + Ka * (outcome - Pa)
-        playerBrating = playerBrating + Kb * ((1 - outcome) - Pb)
+        playerArating = playerArating + k * ((1 - outcome) - Pa)
+        playerBrating = playerBrating + k * (outcome - Pb)
 
         # return updated ratings
         return (round(playerArating), round(playerBrating))

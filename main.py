@@ -6,7 +6,13 @@ from dotenv import load_dotenv
 from custom import Client
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,  # Set the logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Set the logging format
+    handlers=[
+        logging.FileHandler("output.log"),  # Write logs to a file named "output.log"
+    ]
+)
 
 bot = Client()
 

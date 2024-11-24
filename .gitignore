@@ -1,2 +1,8 @@
 SSBUMM.db
 .log
+__pycache__/*
+.pseudocode
+bugreports.log
+playerreport.log
+.env
+output.log

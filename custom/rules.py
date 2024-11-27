@@ -7,12 +7,16 @@ class Rules():
 
     async def display_rules(self, interaction:discord.Interaction):
         rules:str = """
+**NOTE**: Duing testing you're free to break whatever rules you would like, all progress/reputation will be wiped at the end of testing
+
 1. Report matches honestly
 2. Stay present in discord while waiting for a match
 3. Be respectful to your opponent in game
 4. Do not report without valid reason
 5. Do not spam report
-6. Only queue if playing on a wired connection or on VERY consistant wifi"""
+6. Only queue if playing on a wired connection or on VERY consistant wifi
+
+To use the bot, use /queueme to enter queue. Other commands can be viewed with /commands"""
         await interaction.response.defer(ephemeral=True)
         await interaction.followup.send(content=rules, ephemeral=True)
         

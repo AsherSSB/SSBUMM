@@ -18,11 +18,21 @@ bot = Client()
 
 # TESTING PURPOSES
 @bot.command()
-async def sync(ctx: commands.Context):
+@commands.is_owner()
+async def sync(ctx:commands.Context):
     # sync to the guild where the command was used
     bot.tree.copy_global_to(guild=ctx.guild)
     await bot.tree.sync(guild=ctx.guild)
     await ctx.send(content="Success")
+
+
+@bot.command()
+@commands.is_owner()
+async def clear(ctx:commands.Context):
+    bot.tree.clear_commands(guild=ctx.guild)
+    await bot.tree.sync(guild=ctx.guild)
+    await ctx.send("cleared")
+    logging.info("cleared")
 
 
 @bot.command()

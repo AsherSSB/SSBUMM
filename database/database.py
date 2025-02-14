@@ -3,6 +3,7 @@ from discord.ext import commands
 import aiosqlite
 import logging
 
+
 class Database():
     def __init__(self):
         self.con = None
@@ -22,7 +23,7 @@ class Database():
         logging.info("User table created")
 
 
-    # TODO: check for user already in database
+
     async def add_user(self, userid):
         if await self.userExists(userid):
             logging.info(f"User {userid} already exists in database")

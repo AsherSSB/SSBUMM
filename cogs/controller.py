@@ -25,13 +25,10 @@ class Controller(commands.Cog):
         self.prl = PlayerReportLogger().logger
         self.brl = BugReportLogger().logger
         self.fbl = FeedbackLogger().logger
-        # TODO: move root logger here and replace logging with new attribute
 
-    
     async def cog_load(self):
         self.db = Database()
         await self.db.initialize()
-
 
     async def mm_loop(self):
         try:
@@ -53,8 +50,6 @@ class Controller(commands.Cog):
         except Exception as e:
             logging.error(f"Unknown Error: {e}")
 
-
-    # TODO: refactor this nested dogshit
     async def match_players(self, player1:list[int, discord.Interaction], player2:list[int, discord.Interaction]):
         
         # Query for player info by id
@@ -140,8 +135,6 @@ class Controller(commands.Cog):
 
         logging.info(f"Game successfully finished between {player1[1].user.display_name} and {player2[1].user.display_name}")
 
-    
-    # TODO: refactor more dogshit
     async def game_loop(self, player1:discord.Interaction, player2:discord.Interaction, p1char, p2char, room, password, starter):
         # score[0] p1 score score[1] p2 score
         score:list[int] = [0, 0]
@@ -237,7 +230,6 @@ class Controller(commands.Cog):
         else:
             return 1
 
-
     async def send_declined_message(self, player:discord.Interaction):
         await player.followup.send("Your opponent has declined, requeueing", ephemeral=True)
         await self.requeue((player.user.id, player))
@@ -246,7 +238,6 @@ class Controller(commands.Cog):
     async def requeue(self, player:list[int, discord.Interaction]):
         queuepos = int(random() * 1000) % (len(self.queue) + 1 )
         self.queue.insert(queuepos, player)
-
 
     @discord.app_commands.command(name="openmm")
     async def start_mm(self, interaction: discord.Interaction):
@@ -267,7 +258,6 @@ class Controller(commands.Cog):
         self.mmopen = False
         await interaction.response.send_message("Matchmaking stopped")
 
-
     @discord.app_commands.command(name="rules")
     async def printrules(self, interaction:discord.Interaction):
         rules = Rules(self.bot)
@@ -278,14 +268,12 @@ class Controller(commands.Cog):
         else:
             print(f"{interaction.user.id} rejected")
 
-
     async def adjust_elo(self, p1elo, p2elo, outcome):
         elo = Elo(self.bot)
         adjusted:tuple[int, int] = await elo.adjust_elo(p1elo, p2elo, outcome)
         # [0] p1 [1] p2
         return adjusted
 
-    
     @discord.app_commands.command(name="newtable")
     async def create_table(self, interaction:discord.Interaction):
         if interaction.user.id == 229036799790546944:
@@ -298,7 +286,6 @@ class Controller(commands.Cog):
         else:
             await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
 
-
     async def add_user(self, userid):
         try:
             logging.info(f"Attempting to add user {userid}")
@@ -307,7 +294,6 @@ class Controller(commands.Cog):
         except Exception as e:
             logging.error(f"Failed to add user: {e}")
             print("Failed to add user.")
-
 
     @discord.app_commands.command(name="queueme")
     async def enter_queue(self, interaction:discord.Interaction):
@@ -331,10 +317,8 @@ class Controller(commands.Cog):
         await interaction.response.send_message("You have entered queue", ephemeral=True, view=view)
         self.queue.append([interaction.user.id, interaction])
 
-
     async def coinflip(self):
         return int(random() * 10 % 2 + 1)
-    
 
     # TODO: refactor out if else
     async def start_stage_select(self, p1interact: discord.Interaction, p2interact: discord.Interaction):
@@ -378,7 +362,6 @@ class Controller(commands.Cog):
 
         return select.stages, updated_interaction
 
-
     async def send_embed(self, player:discord.Interaction, opponent:discord.Interaction, 
                          stage:str, p1char:str, p2char:str, score:list[int], room:str, password:str): # score[0] NEEDS to be player's score and score[1] opponent score
         try:
@@ -408,7 +391,6 @@ class Controller(commands.Cog):
         winner, interaction = await view.wait_for_selection()
 
         return winner, interaction
-    
 
     async def send_host_view(self, interaction: discord.Interaction):
         modal = HostModal(interaction=interaction)
@@ -424,7 +406,6 @@ class Controller(commands.Cog):
         
         interaction = button.interaction
         return modal.roomcode.value, modal.password.value
-    
 
     @discord.app_commands.command(name="playerreport")
     async def report_player(self, interaction:discord.Interaction, user:discord.Member, message:str):
@@ -432,13 +413,11 @@ class Controller(commands.Cog):
         await self.db.increment_rep(user.id)
         self.prl.info(f"{interaction.user.display_name}:{interaction.user.id} reported {user.display_name}:{user.id}  \"{message}\"")
 
-
     @discord.app_commands.command(name="bugreport")
     async def report_bug(self, interaction:discord.Interaction, bug:str):
         await interaction.response.send_message(f"bug report \"{bug}\" recieved", ephemeral=True)
         self.brl.info(f"{interaction.user.display_name}:{interaction.user.id} \"{bug}\"")
     
-
     @discord.app_commands.command(name="leaderboard")
     async def print_leaderboard(self, interaction:discord.Interaction):
         content = "------------Leaderboard\n------------\n"
@@ -447,7 +426,6 @@ class Controller(commands.Cog):
             line = f"{rank+1}. {interaction.guild.get_member(player[0]).display_name} - {player[1]}\n"
             content += line
         await interaction.response.send_message(content, ephemeral=True)
-
 
     @discord.app_commands.command(name="leaderembed")
     async def embed_leaderboard(self, interaction:discord.Interaction):
@@ -459,12 +437,10 @@ class Controller(commands.Cog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    
     @discord.app_commands.command(name="feedback")
     async def send_feedback(self, interaction:discord.Interaction, message:str):
         self.fbl.log(message)
         interaction.response.send_message("Thank you for your feedback!", ephemeral=True)
-
 
     @discord.app_commands.command(name="commands")
     async def list_commands(self, interaction:discord.Interaction):
@@ -482,7 +458,6 @@ class Controller(commands.Cog):
 
 /leaderembed - see top 10 highest rated players in embed format"""
         await interaction.response.send_message(content=content)
-
 
     @discord.app_commands.command(name="help")
     async def help_list(self, interaction:discord.Interaction):
